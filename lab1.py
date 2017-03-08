@@ -34,7 +34,7 @@ class Battleships:
         while not isinstance(resp, tuple):
             self.queue.put(resp)
             resp = self.read_from_queue()
-        self.print_message("SHOOT AT POSITION: " + str(position) + "\n" + resp[0])
+        self.print_message("SHOOT AT POSITION: " + str(position) + "\n" + resp[0] + "\n")
         if resp[0] == "POBJEDA":
             self.map = np.empty((self.mapSize, self.mapSize), dtype="bool")
             return

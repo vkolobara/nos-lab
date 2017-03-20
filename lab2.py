@@ -5,7 +5,7 @@ import threading
 import random
 from multiprocessing import Process
 
-n_processes = 5
+n_processes = 10
 
 class MyProcess:
     
@@ -13,7 +13,7 @@ class MyProcess:
         self.index = index
         self.respCount = 0
                 
-        self.clock = random.randint(0, 20)
+        self.clock = 0
         
         self.read_pipes = read_pipes
         self.write_pipes = write_pipes
@@ -28,8 +28,8 @@ class MyProcess:
             pipe.close()
     
     def enterCriticalSection(self):
-        while not self.respCount == n_processes-1:
-            time.sleep(1)
+        while self.respCount != (n_processes-1):
+            time.sleep(0.3)
         self.doCriticalSection()
         self.exitCriticalSection()
         
@@ -52,7 +52,12 @@ class MyProcess:
         index = int(message.split(" ")[1])
         clock = int(message.split(" ")[2])
 
-        if self.currRequest == None or self.clock > clock or (self.clock == clock and self.index > index) :
+        my_clock = self.clock
+        
+        if self.currRequest:
+            my_clock = int(self.currRequest.split(" ")[2])
+        
+        if self.currRequest == None or my_clock > clock or (my_clock == clock and self.index > index) :
             for pipe in self.write_pipes:
                 if pipe.name == str(self.index) + str(index):
                     pipe.write(self.createResponse(message))
@@ -68,8 +73,7 @@ class MyProcess:
         if message:
             self.clock = max(int(message.split(" ")[1]), self.clock) + 1
             return message
-            
-        
+    
     def createResponse(self, request):
         msgSplit = request.split(" ")
         return "RESP " + str(self.index) + " " + msgSplit[2] + "\n"
@@ -99,10 +103,8 @@ def readMessage(proc):
             
             if msgSplit[0] == "REQ":
                 proc.respondRequestEntry(msg)
-            else:
+            elif msgSplit[0] == "RESP":
                 proc.respCount += 1
-    
-    
 
 def process(index, totalNum):
     
@@ -122,16 +124,14 @@ def process(index, totalNum):
     proc = MyProcess(index, read_pipes, write_pipes)
 
     t = threading.Thread(target=readMessage, args = (proc, ))
-    t.daemon = True
     t.start()
-    
-    
-    
-    for i in range(3):
-        time.sleep(1)
+
+    for i in range(5):
+        time.sleep(0.3)
         proc.requestEntryCriticalSection()
         proc.enterCriticalSection()
 
+    time.sleep(1)
     proc.closePipes()
     
 if __name__ == "__main__":
@@ -146,4 +146,6 @@ if __name__ == "__main__":
             if not os.path.exists(str(j) + str(i)):
                 os.mkfifo(str(j) + str(i))
         processes[i].start()
-            
+
+    for i in range(n_processes):
+        processes[i].join()

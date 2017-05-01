@@ -1,0 +1,14 @@
+---BEGIN OS2 CRYPTO DATA---
+Description:
+    Secret key
+
+Method:
+    AES
+
+Key length:
+    100
+
+Secret key:
+    12345678901234561234567890123456
+
+---END OS2 CRYPTO DATA---

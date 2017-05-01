@@ -2,9 +2,9 @@ package hr.vinko.nos.lab3
 
 import javax.xml.bind.DatatypeConverter
 
-object CryptoUtils {
+object CryptoUtil {
   def byteToHex(bytes: Array[Byte]): String = {
-    DatatypeConverter.printHexBinary(bytes)
+    DatatypeConverter.printHexBinary(bytes).toLowerCase
   }
   
   def hexToByte(text: String): Array[Byte] = {

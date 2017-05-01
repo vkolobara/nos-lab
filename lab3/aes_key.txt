@@ -1,0 +1,18 @@
+---BEGIN OS2 CRYPTO DATA---
+Description:
+    Secret key
+
+Method:
+    AES
+
+Key length:
+    200
+
+Secret key:
+    6b64fded313149cb60ac2e7010608b57db39465b360a6e9a79163271e62d
+    b30e
+
+Initialization vector:
+    36b3af172149889426c68486ffabc6ba
+
+---END OS2 CRYPTO DATA---

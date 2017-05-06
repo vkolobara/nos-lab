@@ -1,0 +1,1 @@
+scala -cp target hr.vinko.nos.lab3.Main.AESMain "$@"

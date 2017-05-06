@@ -4,10 +4,10 @@ import javax.xml.bind.DatatypeConverter
 
 object CryptoUtil {
   def byteToHex(bytes: Array[Byte]): String = {
-    DatatypeConverter.printHexBinary(bytes).toLowerCase
+    bytes.map("%02x" format _).mkString
   }
-  
+
   def hexToByte(text: String): Array[Byte] = {
-    DatatypeConverter.parseHexBinary(text)
+    text.sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
   }
 }

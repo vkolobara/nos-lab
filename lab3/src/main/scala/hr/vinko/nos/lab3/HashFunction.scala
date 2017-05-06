@@ -12,7 +12,7 @@ class SHA256 extends HashFunction {
   override val name = "SHA-256"
   val md = MessageDigest.getInstance(name)
 
-  override val keySize = md.getDigestLength
+  override val keySize = md.getDigestLength * 8
   
   def hash(text: String): String = {
     CryptoUtil.byteToHex(md.digest(text.getBytes("UTF-8")))

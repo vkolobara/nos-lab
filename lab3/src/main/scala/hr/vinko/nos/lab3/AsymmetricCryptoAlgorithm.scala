@@ -5,7 +5,7 @@ import java.security.interfaces.RSAPrivateKey
 import java.io.File
 import java.nio.file.Paths
 import java.util.Base64
-import hr.vinko.nos.lab3.FileUtil.writeToFile
+import hr.vinko.nos.lab3.FieldUtil.writeToFile
 import java.nio.file.Files
 import java.security.KeyPairGenerator
 import java.math.BigInteger
@@ -16,6 +16,9 @@ import java.security.spec.RSAPrivateKeySpec
 import java.security.spec.RSAPublicKeySpec
 import java.security.PublicKey
 import java.security.PrivateKey
+import java.security.spec.KeySpec
+import java.security.Key
+import scala.io.Source
 
 trait AsymmetricCryptoAlgorithm {
 
@@ -26,40 +29,85 @@ trait AsymmetricCryptoAlgorithm {
 
   def encryptPrivate(text: String): Array[Byte]
   def encryptPublic(text: String): Array[Byte]
+
   def decryptPrivate(bytes: Array[Byte]): String
   def decryptPublic(bytes: Array[Byte]): String
 
-  def encryptFilePrivate(inPath: String, outPath: String) = {
-    val inFile = new File(inPath)
+  def encryptFilePrivate(inPath: String, outPath: String)
+  def encryptFilePublic(inPath: String, outPath: String)
 
-    val file = new String(Files.readAllBytes(Paths get inPath), "UTF-8")
-
-    writeToFile(outPath,
-      FieldUtil.createDescription("Crypted file") +
-        FieldUtil.createMethod(name) +
-        FieldUtil.createFileName(inFile.getName) +
-        FieldUtil.createData(new String(Base64.getEncoder.encode(encryptPrivate(file)))))
-  }
-  
-  def encryptFilePublic(inPath: String, outPath: String) = {
-    val inFile = new File(inPath)
-
-    val file = new String(Files.readAllBytes(Paths get inPath), "UTF-8")
-
-    writeToFile(outPath,
-      FieldUtil.createDescription("Crypted file") +
-        FieldUtil.createMethod(name) +
-        FieldUtil.createFileName(inFile.getName) +
-        FieldUtil.createData(new String(Base64.getEncoder.encode(encryptPublic(file)))))
-  }
+  def writePrivateKeyToFile(filePath: String)
+  def writePublicKeyToFile(filePath: String)
 
 }
 
+abstract class CryptoAlgorithmAuto extends AsymmetricCryptoAlgorithm {
+  def encryptPrivate(text: String): Array[Byte] = {
+    CryptoAlgorithm.encrypt(text, privateKey, name)
+  }
+  def encryptPublic(text: String): Array[Byte] = {
+    CryptoAlgorithm.encrypt(text, publicKey, name)
+  }
+
+  def decryptPrivate(bytes: Array[Byte]): String = {
+    CryptoAlgorithm.decrypt(bytes, publicKey, name)
+  }
+  def decryptPublic(bytes: Array[Byte]): String = {
+    CryptoAlgorithm.decrypt(bytes, privateKey, name)
+  }
+
+  def encryptFilePrivate(inPath: String, outPath: String) = {
+    CryptoAlgorithm.encryptFile(inPath, outPath, privateKey, name)
+  }
+
+  def encryptFilePublic(inPath: String, outPath: String) = {
+    CryptoAlgorithm.encryptFile(inPath, outPath, publicKey, name)
+  }
+}
+
+object CryptoAlgorithm {
+
+  def encrypt(text: String, key: Key, name: String): Array[Byte] = {
+    val cipher = Cipher.getInstance(name)
+    cipher.init(Cipher.ENCRYPT_MODE, key)
+    cipher.doFinal(text.getBytes("UTF-8"))
+  }
+
+  def decrypt(bytes: Array[Byte], key: Key, name: String): String = {
+    val cipher = Cipher.getInstance(name)
+    cipher.init(Cipher.DECRYPT_MODE, key)
+    new String(cipher.doFinal(bytes), "UTF-8")
+  }
+
+  def encryptFile(inPath: String, outPath: String, key: Key, name: String) = {
+    val inFile = new File(inPath)
+
+    val file = new String(Files.readAllBytes(Paths get inPath), "UTF-8")
+
+    writeToFile(outPath,
+      FieldUtil.createDescription("Crypted file") +
+        FieldUtil.createMethod(name) +
+        FieldUtil.createFileName(inFile.getName) +
+        FieldUtil.createData(new String(Base64.getEncoder.encode(encrypt(file, key, name)))))
+  }
+  
+  
+  def decryptFile(inPath: String, outPath: String, key: Key, name: String) = {
+    val inFile = new File(inPath)
+
+    val file = FieldUtil.getField("Data", Source.fromFile(inPath).getLines.toList)
+
+    FileUtil.writeToFile(new String(decrypt(Base64.getDecoder.decode(file.getBytes("UTF-8")), key, name)), outPath)
+  }
+
+}
 object RSACrypto {
-  def initRandom() = {
+  def initRandom(keySize: Int) = {
+    assert(keySize >= 1024, "key_size >= 1024")
+
     val keyGen = KeyPairGenerator.getInstance("RSA")
 
-    keyGen.initialize(1024)
+    keyGen.initialize(keySize)
 
     val keyPair = keyGen.generateKeyPair
 
@@ -71,39 +119,14 @@ object RSACrypto {
   }
 }
 
-class RSACrypto(n: BigInteger, e: BigInteger, d: BigInteger) extends AsymmetricCryptoAlgorithm {
+class RSACrypto(n: BigInteger, e: BigInteger, d: BigInteger) extends CryptoAlgorithmAuto {
   val name = "RSA"
   val keyFactory = KeyFactory.getInstance("RSA")
-
   def publicKey = keyFactory.generatePublic(new RSAPublicKeySpec(n, e))
   def privateKey = keyFactory.generatePrivate(new RSAPrivateKeySpec(n, d))
 
-  val keySize = n.toByteArray.length * 8
-
-  def encryptPublic(text: String): Array[Byte] = {
-    val cipher = Cipher.getInstance("RSA")
-    cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-    cipher.doFinal(text.getBytes("UTF-8"))
-  }
-
-  def decryptPublic(bytes: Array[Byte]): String = {
-    val cipher = Cipher.getInstance("RSA")
-    cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    new String(cipher.doFinal(bytes), "UTF-8")
-  }
-
-  def encryptPrivate(text: String): Array[Byte] = {
-    val cipher = Cipher.getInstance("RSA")
-    cipher.init(Cipher.ENCRYPT_MODE, privateKey)
-    cipher.doFinal(text.getBytes("UTF-8"))
-  }
-
-  def decryptPrivate(bytes: Array[Byte]): String = {
-    val cipher = Cipher.getInstance("RSA")
-    cipher.init(Cipher.DECRYPT_MODE, publicKey)
-    new String(cipher.doFinal(bytes), "UTF-8")
-  }
-
+  val keySize = n.toString(16).length * 4
+    
   def writePrivateKeyToFile(filePath: String) = {
     writeToFile(filePath,
       FieldUtil.createDescription("Private key") +

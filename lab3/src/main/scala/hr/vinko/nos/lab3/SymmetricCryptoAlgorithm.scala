@@ -21,15 +21,19 @@ import java.security.PublicKey
 import java.security.PrivateKey
 import javax.crypto.spec.IvParameterSpec
 import java.security.SecureRandom
+import java.security.Key
+import com.sun.crypto.provider.AESCrypt
 
 trait SymmetricCryptoAlgorithm {
 
   val name: String
+  
   val keySize: Int
   val secretKey: SecretKeySpec
 
   def encrypt(text: String): Array[Byte]
   def decrypt(bytes: Array[Byte]): String
+  
 
   def encryptFile(inPath: String, outPath: String) = {
     val inFile = new File(inPath)
@@ -42,12 +46,13 @@ trait SymmetricCryptoAlgorithm {
         FieldUtil.createFileName(inFile.getName) +
         FieldUtil.createData(new String(Base64.getEncoder.encode(encrypt(file)))))
   }
+  
   def decryptFile(inPath: String, outPath: String) = {
     val inFile = new File(inPath)
 
     val file = FieldUtil.getField("Data", Source.fromFile(inPath).getLines.toList)
 
-    FileUtil.writeToFile(new String(decrypt(Base64.getDecoder.decode(file.getBytes("UTF-8")))), outPath)
+    FileUtil.writeToFile(decrypt(Base64.getDecoder.decode(file.getBytes)), outPath)
   }
 
 }
@@ -72,7 +77,7 @@ class AESCrypto(key: String, iv: String) extends SymmetricCryptoAlgorithm {
   val name = "AES"
 
   val secretKey = new SecretKeySpec(CryptoUtil.hexToByte(key), "AES")
-    
+      
   val ivSpec = new IvParameterSpec(CryptoUtil.hexToByte(iv))
   
   val keySize = secretKey.getEncoded.length * 8

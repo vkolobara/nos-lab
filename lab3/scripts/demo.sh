@@ -1,0 +1,112 @@
+#BASE PATHS
+
+INPUT="../files/black_knight.txt"
+BASE_DIR="../files/demo/"
+
+#AES PATHS
+
+AES_KEY=$BASE_DIR"aes_key.txt"
+AES_ENCRYPT=$BASE_DIR"aes_encrypted.txt"
+AES_DECRYPT=$BASE_DIR"aes_decrypted.txt"
+
+#RSA PATHS
+
+ALICE_PRIVATE_KEY=$BASE_DIR"alice_private_key.txt"
+ALICE_PUBLIC_KEY=$BASE_DIR"alice_public_key.txt"
+BOB_PRIVATE_KEY=$BASE_DIR"bob_private_key.txt"
+BOB_PUBLIC_KEY=$BASE_DIR"bob_public_key.txt"
+
+RSA_ENCRYPT_ALICE=$BASE_DIR"rsa_encrypted_alice.txt"
+RSA_ENCRYPT_BOB=$BASE_DIR"rsa_encrypted_bob.txt"
+
+RSA_DECRYPT_ALICE=$BASE_DIR"rsa_decrypted_alice.txt"
+RSA_DECRYPT_BOB=$BASE_DIR"rsa_decrypted_bob.txt"
+
+SHA_OUTPUT=$BASE_DIR"sha256_output.txt"
+
+ENVELOPE_ENCRYPT=$BASE_DIR"envelope_encrypted.txt"
+ENVELOPE_DECRYPT=$BASE_DIR"envelope_decrypted.txt"
+
+SIGNATURE_OUT=$BASE_DIR"signature.txt"
+
+SEAL_DECRYPT=$BASE_DIR"seal_decrypted.txt"
+
+
+#AES DEMO
+
+sh aes.sh generate 128 $AES_KEY &&
+sh aes.sh encrypt $AES_KEY $INPUT $AES_ENCRYPT &&
+sh aes.sh decrypt $AES_KEY $AES_ENCRYPT $AES_DECRYPT
+
+if ! cmp $INPUT $AES_DECRYPT
+then
+	echo "AES: ORIGINAL AND DECRPYTED FILE ARE NOT THE SAME"
+else 
+	echo "AES PASSED SUCCESSFULLY"
+fi
+
+#RSA DEMO
+
+sh rsa.sh generate 2048 $BOB_PRIVATE_KEY $BOB_PUBLIC_KEY &&
+sh rsa.sh generate 2048 $ALICE_PRIVATE_KEY $ALICE_PUBLIC_KEY &&
+sh rsa.sh encrypt $ALICE_PUBLIC_KEY $AES_KEY $RSA_ENCRYPT_ALICE &&
+sh rsa.sh decrypt $ALICE_PRIVATE_KEY $RSA_ENCRYPT_ALICE $RSA_DECRYPT_ALICE
+
+if ! cmp $AES_KEY $RSA_DECRYPT_ALICE
+then
+	echo "RSA: ORIGINAL AND DECRPYTED FILE ARE NOT THE SAME"
+else 
+	echo "RSA PASSED SUCCESSFULLY"
+fi
+
+
+#SHA DEMO
+sh sha.sh $INPUT $SHA_OUTPUT
+
+
+#ALICE SENDS TO BOB IN ALL EXAMPLES BELOW
+
+#ENVELOPE DEMO
+sh envelope.sh encrypt $INPUT $BOB_PUBLIC_KEY $ENVELOPE_ENCRYPT &&
+sh envelope.sh decrypt $ENVELOPE_ENCRYPT $BOB_PRIVATE_KEY $ENVELOPE_DECRYPT
+
+if ! cmp $INPUT $ENVELOPE_DECRYPT
+then
+	echo "ENVELOPE: ORIGINAL AND DECRPYTED FILE ARE NOT THE SAME"
+else 
+	echo "ENVELOPE PASSED SUCCESSFULLY"
+fi
+
+
+#SIGNATURE DEMO
+sh signature.sh generate $INPUT $ALICE_PRIVATE_KEY $SIGNATURE_OUT &&
+sh signature.sh check $INPUT $SIGNATURE_OUT $ALICE_PUBLIC_KEY
+echo ""
+
+#DIGITAL SEAL
+sh seal.sh generate $INPUT $BOB_PUBLIC_KEY $ALICE_PRIVATE_KEY $ENVELOPE_ENCRYPT $SIGNATURE_OUT &&
+sh seal.sh open $ENVELOPE_ENCRYPT $SIGNATURE_OUT $ALICE_PUBLIC_KEY $BOB_PRIVATE_KEY $SEAL_DECRYPT
+
+if ! cmp $INPUT $SEAL_DECRYPT
+then
+	echo "SEAL: ORIGINAL AND DECRPYTED FILE ARE NOT THE SAME"
+else 
+	echo "SEAL PASSED SUCCESSFULLY"
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

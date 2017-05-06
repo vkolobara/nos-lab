@@ -1,12 +1,3 @@
-ARTHUR:  You fight with the strength of many men, Sir knight.
-      I am Arthur, King of the Britons.
-      [pause]
-      I seek the finest and the bravest knights in the land to join me
-      in my Court of Camelot.
-      [pause]
-      You have proved yourself worthy; will you join me?
-      [pause]
-      You make me sad.  So be it.  Come, Patsy.
   BLACK KNIGHT:  None shall pass.
   ARTHUR:  What?
   BLACK KNIGHT:  None shall pass.

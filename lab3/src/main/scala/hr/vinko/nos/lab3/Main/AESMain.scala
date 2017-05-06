@@ -1,7 +1,8 @@
-package hr.vinko.nos.lab3
+package hr.vinko.nos.lab3.Main
 
 import scala.io.Source
-import java.util.Base64
+import hr.vinko.nos.lab3.AESCrypto
+import hr.vinko.nos.lab3.FieldUtil
 
 /**
  * Args: encrypt/decrypt/generate, AES key, input file, output file

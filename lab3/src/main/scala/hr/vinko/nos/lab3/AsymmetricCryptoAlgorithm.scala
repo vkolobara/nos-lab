@@ -19,6 +19,7 @@ import java.security.PrivateKey
 import java.security.spec.KeySpec
 import java.security.Key
 import scala.io.Source
+import java.security.SecureRandom
 
 trait AsymmetricCryptoAlgorithm {
 
@@ -90,8 +91,7 @@ object CryptoAlgorithm {
         FieldUtil.createFileName(inFile.getName) +
         FieldUtil.createData(new String(Base64.getEncoder.encode(encrypt(file, key, name)))))
   }
-  
-  
+
   def decryptFile(inPath: String, outPath: String, key: Key, name: String) = {
     val inFile = new File(inPath)
 
@@ -126,12 +126,12 @@ class RSACrypto(n: BigInteger, e: BigInteger, d: BigInteger) extends CryptoAlgor
   def privateKey = keyFactory.generatePrivate(new RSAPrivateKeySpec(n, d))
 
   val keySize = n.toString(16).length * 4
-    
+
   def writePrivateKeyToFile(filePath: String) = {
     writeToFile(filePath,
       FieldUtil.createDescription("Private key") +
         FieldUtil.createMethod(name) +
-        FieldUtil.createKeyLength((n.toString(16).length * 8L).toHexString) +
+        FieldUtil.createKeyLength((keySize).toHexString) +
         FieldUtil.createModulus(n.toString(16)) +
         FieldUtil.createPrivateExp(d.toString(16)))
   }
@@ -139,8 +139,92 @@ class RSACrypto(n: BigInteger, e: BigInteger, d: BigInteger) extends CryptoAlgor
     writeToFile(filePath,
       FieldUtil.createDescription("Public key") +
         FieldUtil.createMethod(name) +
-        FieldUtil.createKeyLength((n.toString(16).length * 8L).toHexString) +
+        FieldUtil.createKeyLength((keySize).toHexString) +
         FieldUtil.createModulus(n.toString(16)) +
         FieldUtil.createPublicExp(e.toString(16)))
   }
+}
+
+class RSACryptoManual(n: BigInteger, e: BigInteger, d: BigInteger) extends RSACrypto(n, e, d) {
+  override val name: String = "RSAVinko"
+  override val keySize: Int = n.toString(16).length * 4
+
+  override def publicKey: PublicKey = null
+  override def privateKey: PrivateKey = null
+
+  override def encryptPrivate(text: String): Array[Byte] = {
+    new BigInteger(text.getBytes).modPow(d, n).toByteArray
+  }
+
+  override def encryptPublic(text: String): Array[Byte] = {
+    new BigInteger(text.getBytes).modPow(e, n).toByteArray
+  }
+
+  override def decryptPrivate(bytes: Array[Byte]): String = {
+    new String(new BigInteger(bytes).modPow(e, n).toByteArray)
+  }
+
+  override def decryptPublic(bytes: Array[Byte]): String = {
+    new String(new BigInteger(bytes).modPow(d, n).toByteArray)
+  }
+
+  override def encryptFilePrivate(inPath: String, outPath: String) = {
+    val inFile = new File(inPath)
+
+    val file = new String(Files.readAllBytes(Paths get inPath), "UTF-8")
+
+    writeToFile(outPath,
+      FieldUtil.createDescription("Crypted file") +
+        FieldUtil.createMethod(name) +
+        FieldUtil.createFileName(inFile.getName) +
+        FieldUtil.createData(new String(Base64.getEncoder.encode(encryptPrivate(file)))))
+  }
+  override def encryptFilePublic(inPath: String, outPath: String) = {
+    val inFile = new File(inPath)
+
+    val file = new String(Files.readAllBytes(Paths get inPath), "UTF-8")
+
+    writeToFile(outPath,
+      FieldUtil.createDescription("Crypted file") +
+        FieldUtil.createMethod(name) +
+        FieldUtil.createFileName(inFile.getName) +
+        FieldUtil.createData(new String(Base64.getEncoder.encode(encryptPublic(file)))))
+  }
+
+  def decryptFilePublic(inPath: String, outPath: String) = {
+    val inFile = new File(inPath)
+
+    val file = FieldUtil.getField("Data", Source.fromFile(inPath).getLines.toList)
+
+    FileUtil.writeToFile(new String(decryptPublic(Base64.getDecoder.decode(file.getBytes("UTF-8")))), outPath)
+  }
+
+  def decryptFilePrivate(inPath: String, outPath: String) = {
+    val inFile = new File(inPath)
+
+    val file = FieldUtil.getField("Data", Source.fromFile(inPath).getLines.toList)
+
+    FileUtil.writeToFile(new String(decryptPrivate(Base64.getDecoder.decode(file.getBytes("UTF-8")))), outPath)
+  }
+}
+
+object RSACryptoManual {
+
+  def initRandom(keyLength: Int) = {
+    val one = new BigInteger("1")
+    val rand = new SecureRandom
+
+    val p = BigInteger.probablePrime(keyLength / 2, rand)
+    val q = BigInteger.probablePrime(keyLength / 2, rand)
+
+    val phi = (p.subtract(one)).multiply(q.subtract(one))
+
+    val n = p.multiply(q)
+    val e = new BigInteger("65537")
+    val d = e.modInverse(phi)
+
+    new RSACryptoManual(n, e, d)
+
+  }
+
 }

@@ -31,6 +31,9 @@ SIGNATURE_OUT=$BASE_DIR"signature.txt"
 
 SEAL_DECRYPT=$BASE_DIR"seal_decrypted.txt"
 
+RSA_ENCRYPT_BOB_MANUAL=$BASE_DIR"rsa_encrypted_bob_manual.txt"
+RSA_DECRYPT_BOB_MANUAL=$BASE_DIR"rsa_decrypted_bob_manual.txt"
+
 
 #AES DEMO
 
@@ -47,7 +50,6 @@ fi
 
 #RSA DEMO
 
-sh rsa.sh generate 2048 $BOB_PRIVATE_KEY $BOB_PUBLIC_KEY &&
 sh rsa.sh generate 2048 $ALICE_PRIVATE_KEY $ALICE_PUBLIC_KEY &&
 sh rsa.sh encrypt $ALICE_PUBLIC_KEY $AES_KEY $RSA_ENCRYPT_ALICE &&
 sh rsa.sh decrypt $ALICE_PRIVATE_KEY $RSA_ENCRYPT_ALICE $RSA_DECRYPT_ALICE
@@ -59,6 +61,19 @@ else
 	echo "RSA PASSED SUCCESSFULLY"
 fi
 
+
+#TEST MY IMPLEMENTATION OF RSA
+
+sh rsaVinko.sh generate 2048 $BOB_PRIVATE_KEY $BOB_PUBLIC_KEY &&
+sh rsaVinko.sh encrypt $BOB_PUBLIC_KEY $AES_KEY $RSA_ENCRYPT_BOB_MANUAL &&
+sh rsaVinko.sh decrypt $BOB_PRIVATE_KEY $RSA_ENCRYPT_BOB_MANUAL $RSA_DECRYPT_BOB_MANUAL
+
+if ! cmp $AES_KEY $RSA_DECRYPT_BOB_MANUAL
+then
+	echo "RSA MANUAL: ORIGINAL AND DECRPYTED FILE ARE NOT THE SAME"
+else 
+	echo "RSA MANUAL PASSED SUCCESSFULLY"
+fi
 
 #SHA DEMO
 sh sha.sh $INPUT $SHA_OUTPUT
@@ -93,20 +108,5 @@ then
 else 
 	echo "SEAL PASSED SUCCESSFULLY"
 fi
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
